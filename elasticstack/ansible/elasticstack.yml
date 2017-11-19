@@ -1,0 +1,31 @@
+---
+
+- hosts: all
+  tasks:
+    - name: create elastic yum repository
+      yum_repository:
+        name: elastic
+        description: elastic 
+        baseurl: https://artifacts.elastic.co/packages/6.x/yum/
+        gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        gpgcheck: yes
+        sslverify: yes
+    - name: install elasticstack components
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - elasticsearch
+        - kibana
+        - filebeat
+        - logstash
+    - name: start and enable elasticstack
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - elasticsearch
+        - kibana
+        - filebeat
+  become: yes
