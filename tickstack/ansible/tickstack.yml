@@ -1,0 +1,31 @@
+---
+
+- hosts: all
+  tasks:
+    - name: deploy influxdata.repo
+      copy:
+        src: influxdata.repo
+        dest: /etc/yum.repos.d/influxdata.repo
+        owner: root
+        group: root
+        mode: 0644
+    - name: install tickstack components
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - influxdb
+        - telegraf
+        - kapacitor
+        - chronograf
+    - name: start and enable tickstack
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - influxdb
+        - telegraf
+        - kapacitor
+        - chronograf
+  become: yes
