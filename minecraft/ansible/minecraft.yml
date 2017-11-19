@@ -1,0 +1,59 @@
+---
+
+- hosts: all
+  tasks:
+    - name: install java-1.8.0-openjdk-headless
+      yum:
+        name: java-1.8.0-openjdk-headless
+        state: present
+    - name: add minecraft user
+      user:
+        name: minecraft
+        state: present
+    - name: figure out minecraft server jar url
+      shell: curl -s https://minecraft.net/en-us/download/server | grep -E 'https.*server.*jar' | sed 's/^.*href="//' | sed 's/">.*$//'
+      args:
+        warn: False
+      register: server_jar
+      changed_when: False
+    - name: fetch minecraft server jar
+      get_url:
+        url: "{{ server_jar.stdout }}"
+        dest: /home/minecraft/
+        owner: minecraft
+        group: minecraft
+        mode: 0664
+    - name: install screen
+      yum:
+        name: screen
+        state: present
+    - name: open firewall for minecraft
+      firewalld:
+        port: 25565/tcp
+        permanent: true
+        state: enabled
+    - name: deploy minecraft config files
+      copy:
+        src: "{{ item }}"
+        dest: /home/minecraft/{{ item }}
+        owner: minecraft
+        group: minecraft
+        mode: 0664
+      with_items:
+        - eula.txt
+        - server.properties
+        - banned-ips.json
+        - banned-players.json
+        - ops.json
+        - usercache.json
+        - whitelist.json
+    - name: check if already running
+      shell: pgrep -flu minecraft | grep screen
+      register: running
+      failed_when: false
+      changed_when: false
+    - name: start minecraft in screen
+      shell: screen -dm -S minecraft java -Xmx1024M -Xms1024M -jar {{ server_jar.stdout | basename }} nogui
+      become_user: minecraft
+      when: running.rc != 0
+  become: yes
