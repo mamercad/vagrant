@@ -2,13 +2,14 @@
 
 - hosts: all
   tasks:
-    - name: deploy influxdata.repo
-      copy:
-        src: influxdata.repo
-        dest: /etc/yum.repos.d/influxdata.repo
-        owner: root
-        group: root
-        mode: 0644
+    - name: create influx yum repository
+      yum_repository:
+        name: influx
+        description: influx
+        baseurl: https://repos.influxdata.com/rhel/$releasever/$basearch/stable
+        gpgkey: https://repos.influxdata.com/influxdb.key
+        gpgcheck: yes
+        sslverify: yes
     - name: install tickstack components
       yum:
         name: "{{ item }}"
